@@ -19,6 +19,7 @@ export interface Plan {
   id: string;
   title: string;
   date: string | null;
+  emoji: string;
   position: number;
   created_at: string;
 }

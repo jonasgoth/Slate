@@ -30,6 +30,9 @@ export function InlineAddTask({ onAdd, onCancel }: InlineAddTaskProps) {
       return;
     }
     onAdd(title.trim());
+    setTitle('');
+    // Keep focus for chaining
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   return (

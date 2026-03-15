@@ -70,7 +70,7 @@ export function Sidebar({ todayCount, backlogCount, plansCount }: SidebarProps) 
   return (
     <nav
       className="flex-shrink-0 h-screen"
-      style={{ width: '200px', paddingTop: '32px', paddingLeft: '12px', paddingRight: '12px', backgroundColor: '#F9F6F7' }}
+      style={{ width: '200px', paddingTop: '32px', paddingLeft: '12px', paddingRight: '12px', backgroundColor: '#F2F1EE' }}
     >
       <ul style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
         {navItems.map((item) => {

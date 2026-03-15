@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useBacklog } from '@/hooks/useBacklog';
 import { TaskCard } from '@/components/TaskCard';
@@ -12,7 +11,6 @@ import { SortableList } from '@/components/SortableList';
 import type { BacklogTodo } from '@/types';
 
 export default function BacklogPage() {
-  const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const { todos, addTodo: addBacklogItem, updateTodo, deleteTodo, moveToToday, reorderTodos } = useBacklog();
 
   const [addingTask, setAddingTask] = useState(false);
@@ -59,6 +57,7 @@ export default function BacklogPage() {
                 onDelete={deleteTodo}
                 showMoveToToday={true}
                 onMoveToToday={moveToToday}
+                onEnter={() => setAddingTask(true)}
               />
             </motion.div>
           </AnimatePresence>
@@ -68,7 +67,7 @@ export default function BacklogPage() {
       {addingTask && (
         <div style={{ marginTop: '8px' }}>
           <InlineAddTask
-            onAdd={async (title) => { await addBacklogItem(title); setAddingTask(false); }}
+            onAdd={async (title) => { await addBacklogItem(title); }}
             onCancel={() => setAddingTask(false)}
           />
         </div>

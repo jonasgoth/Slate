@@ -3,9 +3,9 @@
 import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { useTodos } from '@/hooks/useTodos';
 import { usePlans } from '@/hooks/usePlans';
+import { useData } from '@/lib/DataContext';
 import { TaskCard } from '@/components/TaskCard';
 import { PlanCard } from '@/components/PlanCard';
 import { SectionLabel } from '@/components/SectionLabel';
@@ -15,10 +15,8 @@ import { SortableList } from '@/components/SortableList';
 import type { Todo } from '@/types';
 
 export default function TodayPage() {
-  const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
-  const router = useRouter();
-
-  const { todos, addTodo, updateTodo, deleteTodo, reorderTodos } = useTodos(today);
+  const { today } = useData();
+  const { todos, addTodo, updateTodo, deleteTodo, reorderTodos, moveToBacklog } = useTodos();
   const { plans } = usePlans();
 
   const [addingTask, setAddingTask] = useState(false);
@@ -26,7 +24,7 @@ export default function TodayPage() {
   const dayName = format(new Date(), 'EEEE');
   const dateLabel = format(new Date(), 'MMMM d');
 
-  const upcomingPlans = plans.filter((p) => p.date && p.date >= today).slice(0, 3);
+  const upcomingPlans = plans.slice(0, 3);
 
   return (
     <div className="page-container">
@@ -51,7 +49,7 @@ export default function TodayPage() {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '15px',
             fontStyle: 'normal',
-            fontWeight: 400,
+            fontWeight: 500,
             lineHeight: '16px',
             marginTop: '4px',
           }}
@@ -81,7 +79,9 @@ export default function TodayPage() {
                   onToggle={(id, completed) => updateTodo(id, { is_completed: completed })}
                   onUpdate={(id, title) => updateTodo(id, { title })}
                   onDelete={deleteTodo}
-                  deleteOnlyWhenCompleted={true}
+                  showMoveToBacklog={!todo.is_completed}
+                  onMoveToBacklog={moveToBacklog}
+                  onEnter={() => setAddingTask(true)}
                 />
               </motion.div>
             </AnimatePresence>
@@ -90,7 +90,7 @@ export default function TodayPage() {
         {addingTask && (
           <div style={{ marginTop: '8px' }}>
             <InlineAddTask
-              onAdd={async (title) => { await addTodo(title); setAddingTask(false); }}
+              onAdd={async (title) => { await addTodo(title); }}
               onCancel={() => setAddingTask(false)}
             />
           </div>
@@ -103,10 +103,10 @@ export default function TodayPage() {
       </div>
 
       {/* Plans preview */}
-      {(upcomingPlans.length > 0) && (
-        <div>
-          <SectionLabel>Plans</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div>
+        <SectionLabel>Plans</SectionLabel>
+        {upcomingPlans.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
             {upcomingPlans.map((plan) => (
               <PlanCard
                 key={plan.id}
@@ -117,11 +117,8 @@ export default function TodayPage() {
               />
             ))}
           </div>
-          <div style={{ marginTop: '8px' }}>
-            <AddButton onClick={() => router.push('/plans')} />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
     </div>
   );

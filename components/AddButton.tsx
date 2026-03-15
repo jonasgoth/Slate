@@ -13,6 +13,7 @@ export function AddButton({ onClick, label = '+ Add' }: AddButtonProps) {
         className="text-sm transition-colors"
         style={{
           color: '#B5B5B0',
+          fontWeight: 500,
           padding: '6px 12px',
           borderRadius: '8px',
           backgroundColor: 'transparent',

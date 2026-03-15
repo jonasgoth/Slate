@@ -69,7 +69,7 @@ export function SortableList<T extends { id: string }>({
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>, id: string) => {
       const target = e.target as HTMLElement;
-      if (target.closest('input, button, a, [contenteditable]')) return;
+      if (target.closest('input, button, a, [contenteditable], [data-editable-text]')) return;
 
       const el = itemRefs.current.get(id);
       if (!el) return;
@@ -231,7 +231,6 @@ export function SortableList<T extends { id: string }>({
               <motion.div
                 key="__placeholder__"
                 layout
-                // @ts-expect-error — ref works at runtime on motion.div
                 ref={placeholderRef}
                 initial={{ opacity: 0, scaleY: 0.7 }}
                 animate={{ opacity: 1, scaleY: 1 }}

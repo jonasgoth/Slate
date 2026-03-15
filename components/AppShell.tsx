@@ -1,25 +1,18 @@
 'use client';
 
-import { useMemo } from 'react';
-import { format } from 'date-fns';
+import { DataProvider, useData } from '@/lib/DataContext';
 import { Sidebar } from './Sidebar';
 import { DailyWipe } from './DailyWipe';
-import { useTodos } from '@/hooks/useTodos';
-import { useBacklog } from '@/hooks/useBacklog';
-import { usePlans } from '@/hooks/usePlans';
 
-export function AppShell({ children }: { children: React.ReactNode }) {
-  const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
-  const { todos } = useTodos(today);
-  const { todos: backlog } = useBacklog();
-  const { plans } = usePlans();
+function AppShellInner({ children }: { children: React.ReactNode }) {
+  const { today, todos, backlog, plans } = useData();
 
   const todayCount = todos.filter((t) => !t.is_completed).length;
   const backlogCount = backlog.filter((t) => !t.is_completed).length;
   const plansCount = plans.length;
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F9F6F7' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F2F1EE' }}>
       <Sidebar todayCount={todayCount} backlogCount={backlogCount} plansCount={plansCount} />
       <main className="flex-1 overflow-y-auto" style={{ padding: '16px' }}>
         <div
@@ -36,5 +29,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       <DailyWipe today={today} />
     </div>
+  );
+}
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <DataProvider>
+      <AppShellInner>{children}</AppShellInner>
+    </DataProvider>
   );
 }

@@ -62,3 +62,21 @@ export async function deleteTodosByDate(date: string): Promise<void> {
   const { error } = await supabase.from('day_todos').delete().eq('date', date);
   if (error) throw toError(error);
 }
+
+export async function deleteCompletedTodosByDate(date: string): Promise<void> {
+  const { error } = await supabase
+    .from('day_todos')
+    .delete()
+    .eq('date', date)
+    .eq('is_completed', true);
+  if (error) throw toError(error);
+}
+
+export async function carryForwardTodos(fromDate: string, toDate: string): Promise<void> {
+  const { error } = await supabase
+    .from('day_todos')
+    .update({ date: toDate })
+    .eq('date', fromDate)
+    .eq('is_completed', false);
+  if (error) throw toError(error);
+}

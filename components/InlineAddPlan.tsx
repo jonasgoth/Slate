@@ -27,6 +27,9 @@ export function InlineAddPlan({ onAdd, onCancel }: InlineAddPlanProps) {
   const submit = () => {
     if (!title.trim() || !date) return;
     onAdd(title.trim(), date);
+    setTitle('');
+    setDate('');
+    setTimeout(() => titleRef.current?.focus(), 0);
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

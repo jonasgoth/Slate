@@ -7,9 +7,10 @@ interface EditableTextProps {
   onSave: (value: string) => void;
   completed?: boolean;
   onEditingChange?: (editing: boolean) => void;
+  onEnter?: () => void;
 }
 
-export function EditableText({ value, onSave, completed = false, onEditingChange }: EditableTextProps) {
+export function EditableText({ value, onSave, completed = false, onEditingChange, onEnter }: EditableTextProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -21,7 +22,7 @@ export function EditableText({ value, onSave, completed = false, onEditingChange
 
       // Place caret at the click position rather than selecting all text
       const x = clickXRef.current;
-      if (x !== null && inputRef.current.setSelectionRange) {
+      if (x !== null) {
         const input = inputRef.current;
         // Use the input's font metrics to approximate the character offset
         const style = window.getComputedStyle(input);
@@ -74,42 +75,62 @@ export function EditableText({ value, onSave, completed = false, onEditingChange
   };
 
   if (editing) {
+    const sharedStyle: React.CSSProperties = {
+      fontSize: '15px',
+      fontWeight: 400,
+      padding: '1px 4px',
+      whiteSpace: 'pre',
+    };
     return (
-      <input
-        ref={inputRef}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commit();
-          if (e.key === 'Escape') cancel();
-        }}
-        className="flex-1 outline-none min-w-0"
-        style={{
-          fontSize: '15px',
-          fontWeight: 400,
-          color: '#1A1A1A',
-          background: 'rgba(0,0,0,0.04)',
-          borderRadius: '4px',
-          padding: '1px 4px',
-          margin: '-1px -4px',
-        }}
-      />
+      <div className="flex-1 min-w-0">
+        <span style={{ position: 'relative', display: 'inline-block', maxWidth: 'calc(100% + 8px)', margin: '-1px -4px' }}>
+          {/* hidden mirror — drives the width of the container */}
+          <span
+            aria-hidden
+            style={{ ...sharedStyle, visibility: 'hidden', display: 'block' }}
+          >
+            {draft || ' '}
+          </span>
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { commit(); onEnter?.(); }
+              if (e.key === 'Escape') cancel();
+            }}
+            className="outline-none"
+            style={{
+              ...sharedStyle,
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              color: '#1A1A1A',
+              background: 'rgba(0,0,0,0.04)',
+              borderRadius: '4px',
+            }}
+          />
+        </span>
+      </div>
     );
   }
 
   return (
-    <span
-      onClick={(e) => {
-        clickXRef.current = e.clientX;
-        setEditing(true);
-        setDraft(value);
-        onEditingChange?.(true);
-      }}
-      className="flex-1 cursor-text min-w-0"
-      style={textStyle}
-    >
-      {value}
-    </span>
+    <div className="flex-1 min-w-0 overflow-hidden">
+      <span
+        data-editable-text
+        onClick={(e) => {
+          clickXRef.current = e.clientX;
+          setEditing(true);
+          setDraft(value);
+          onEditingChange?.(true);
+        }}
+        className="cursor-text"
+        style={{ ...textStyle, display: 'inline' }}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
