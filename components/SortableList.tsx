@@ -101,46 +101,44 @@ export function SortableList<T extends { id: string }>({
     };
 
     const handleUp = () => {
-      setDrag((currentDrag) => {
-        if (!currentDrag) return null;
+      if (!drag) return;
 
-        const { id, dropIndex, width, height } = currentDrag;
-        const current = itemsRef.current;
-        const fromIndex = current.findIndex((i) => i.id === id);
+      const { id, dropIndex, width, height } = drag;
+      const current = itemsRef.current;
+      const fromIndex = current.findIndex((i) => i.id === id);
 
-        // Commit reorder
-        if (fromIndex !== dropIndex) {
-          const next = [...current];
-          const [moved] = next.splice(fromIndex, 1);
-          next.splice(dropIndex, 0, moved);
-          onReorderRef.current(next);
-        }
+      // Commit reorder
+      if (fromIndex !== dropIndex) {
+        const next = [...current];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(dropIndex, 0, moved);
+        onReorderRef.current(next);
+      }
 
-        // Snapshot: where is the floating card right now, and where is the placeholder
-        const floatingEl = floatingRef.current;
-        const placeholderEl = placeholderRef.current;
+      // Snapshot: where is the floating card right now, and where is the placeholder
+      const floatingEl = floatingRef.current;
+      const placeholderEl = placeholderRef.current;
 
-        const fromRect = floatingEl?.getBoundingClientRect();
-        const toRect = placeholderEl?.getBoundingClientRect();
+      const fromRect = floatingEl?.getBoundingClientRect();
+      const toRect = placeholderEl?.getBoundingClientRect();
 
-        const item = current.find((i) => i.id === id);
+      const item = current.find((i) => i.id === id);
 
-        if (fromRect && toRect && item) {
-          setSettle({
-            id,
-            item,
-            width,
-            height,
-            fromLeft: fromRect.left,
-            fromTop: fromRect.top,
-            toLeft: toRect.left,
-            toTop: toRect.top,
-          });
-          setTimeout(() => setSettle(null), SETTLE_MS + 50);
-        }
+      if (fromRect && toRect && item) {
+        setSettle({
+          id,
+          item,
+          width,
+          height,
+          fromLeft: fromRect.left,
+          fromTop: fromRect.top,
+          toLeft: toRect.left,
+          toTop: toRect.top,
+        });
+        setTimeout(() => setSettle(null), SETTLE_MS + 50);
+      }
 
-        return null;
-      });
+      setDrag(null);
     };
 
     window.addEventListener('pointermove', handleMove);
@@ -254,6 +252,9 @@ export function SortableList<T extends { id: string }>({
             <motion.div
               key={item.id}
               layout
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } }}
+              exit={{ opacity: 0, height: 0, transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } }}
               // During drag: animate layout shifts smoothly as placeholder moves.
               // During settle (placeholder just vanished): items are already in the
               // right visual position, so skip the layout transition entirely.
@@ -267,6 +268,7 @@ export function SortableList<T extends { id: string }>({
                 cursor: drag ? 'grabbing' : 'grab',
                 userSelect: 'none',
                 touchAction: 'none',
+                overflow: 'hidden',
                 visibility: isSettling ? 'hidden' : 'visible',
               }}
             >

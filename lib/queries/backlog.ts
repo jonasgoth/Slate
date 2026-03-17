@@ -15,13 +15,24 @@ export async function fetchBacklog(): Promise<BacklogTodo[]> {
   return data ?? [];
 }
 
-export async function addBacklogTodo(title: string): Promise<BacklogTodo> {
+export async function addBacklogTodo(title: string, mode: 'personal' | 'work' = 'personal'): Promise<BacklogTodo> {
   const { data, error } = await supabase
     .from('backlog_todos')
-    .insert({ title, is_completed: false, position: Math.floor(Date.now() / 1000) })
+    .insert({ title, mode, is_completed: false, position: Math.floor(Date.now() / 1000) })
     .select()
     .single();
-  if (error) throw toError(error);
+  if (error) {
+    if (error.code === 'PGRST204' || error.message?.includes('mode')) {
+      const { data: fallback, error: fallbackError } = await supabase
+        .from('backlog_todos')
+        .insert({ title, is_completed: false, position: Math.floor(Date.now() / 1000) })
+        .select()
+        .single();
+      if (fallbackError) throw toError(fallbackError);
+      return { ...fallback, mode };
+    }
+    throw toError(error);
+  }
   return data;
 }
 

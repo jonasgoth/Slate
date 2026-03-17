@@ -6,20 +6,22 @@ import { supabase } from '@/lib/supabase';
 import { fetchTodos, addTodo as apiAddTodo, updateTodo as apiUpdateTodo, deleteTodo as apiDeleteTodo } from '@/lib/queries/todos';
 import { fetchBacklog, addBacklogTodo, updateBacklogTodo, deleteBacklogTodo } from '@/lib/queries/backlog';
 import { fetchPlans, addPlan as apiAddPlan, updatePlan as apiUpdatePlan, deletePlan as apiDeletePlan } from '@/lib/queries/plans';
-import type { Todo, BacklogTodo, Plan } from '@/types';
+import { fetchRituals, addRitual as apiAddRitual, updateRitual as apiUpdateRitual, deleteRitual as apiDeleteRitual } from '@/lib/queries/rituals';
+import type { Todo, BacklogTodo, Plan, Ritual, Mode } from '@/types';
+import { setStoredMode, mergeMode, pruneStoredModes } from '@/lib/modeStorage';
 
 interface DataContextValue {
   today: string;
   todos: Todo[];
   todosLoading: boolean;
-  addTodo: (title: string) => Promise<void>;
+  addTodo: (title: string, mode: Mode) => Promise<void>;
   updateTodo: (id: string, updates: Partial<Todo>) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   reorderTodos: (reordered: Todo[]) => Promise<void>;
 
   backlog: BacklogTodo[];
   backlogLoading: boolean;
-  addBacklog: (title: string) => Promise<void>;
+  addBacklog: (title: string, mode: Mode) => Promise<void>;
   updateBacklog: (id: string, updates: Partial<BacklogTodo>) => Promise<void>;
   deleteBacklog: (id: string) => Promise<void>;
   reorderBacklog: (reordered: BacklogTodo[]) => Promise<void>;
@@ -28,10 +30,16 @@ interface DataContextValue {
 
   plans: Plan[];
   plansLoading: boolean;
-  addPlan: (title: string, date: string) => Promise<void>;
+  addPlan: (title: string, date: string, mode: Mode) => Promise<void>;
   updatePlan: (id: string, updates: Partial<Plan>) => Promise<void>;
   deletePlan: (id: string) => Promise<void>;
   reorderPlans: (reordered: Plan[]) => Promise<void>;
+
+  rituals: Ritual[];
+  ritualsLoading: boolean;
+  addRitual: (title: string, mode: Mode) => Promise<void>;
+  updateRitual: (id: string, updates: Partial<Ritual>) => Promise<void>;
+  deleteRitual: (id: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -45,18 +53,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [backlogLoading, setBacklogLoading] = useState(true);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
+  const [rituals, setRituals] = useState<Ritual[]>([]);
+  const [ritualsLoading, setRitualsLoading] = useState(true);
 
   useEffect(() => {
-    fetchTodos(today).then((data) => { setTodos(data); setTodosLoading(false); });
-    fetchBacklog().then((data) => { setBacklog(data); setBacklogLoading(false); });
-    fetchPlans().then((data) => { setPlans(data); setPlansLoading(false); });
+    fetchTodos(today).then((data) => {
+      const merged = mergeMode(data);
+      pruneStoredModes(new Set(merged.map((t) => t.id)));
+      setTodos(merged);
+      setTodosLoading(false);
+    });
+    fetchBacklog().then((data) => { setBacklog(mergeMode(data)); setBacklogLoading(false); });
+    fetchPlans().then((data) => { setPlans(mergeMode(data)); setPlansLoading(false); });
+    fetchRituals().then((data) => { setRituals(data); setRitualsLoading(false); });
 
     const todosChannel = supabase
       .channel(`day_todos_${today}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'day_todos', filter: `date=eq.${today}` },
-        () => fetchTodos(today).then(setTodos)
+        () => fetchTodos(today).then((fresh) => setTodos(mergeMode(fresh)))
       )
       .subscribe();
 
@@ -65,7 +81,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'backlog_todos' },
-        () => fetchBacklog().then(setBacklog)
+        () => fetchBacklog().then((fresh) => setBacklog(mergeMode(fresh)))
       )
       .subscribe();
 
@@ -74,7 +90,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'plans' },
-        () => fetchPlans().then(setPlans)
+        () => fetchPlans().then((fresh) => setPlans(mergeMode(fresh)))
+      )
+      .subscribe();
+
+    const ritualsChannel = supabase
+      .channel('rituals')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'rituals' },
+        () => fetchRituals().then(setRituals)
       )
       .subscribe();
 
@@ -82,13 +107,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(todosChannel);
       supabase.removeChannel(backlogChannel);
       supabase.removeChannel(plansChannel);
+      supabase.removeChannel(ritualsChannel);
     };
   }, [today]);
 
   // --- Todos ---
-  const addTodo = useCallback(async (title: string) => {
-    const todo = await apiAddTodo(title, today);
-    setTodos((prev) => [...prev, todo]);
+  const addTodo = useCallback(async (title: string, mode: Mode) => {
+    const todo = await apiAddTodo(title, today, mode);
+    setStoredMode(todo.id, mode);
+    setTodos((prev) => [...prev, { ...todo, mode }]);
   }, [today]);
 
   const updateTodo = useCallback(async (id: string, updates: Partial<Todo>) => {
@@ -107,9 +134,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // --- Backlog ---
-  const addBacklog = useCallback(async (title: string) => {
-    const todo = await addBacklogTodo(title);
-    setBacklog((prev) => [...prev, todo]);
+  const addBacklog = useCallback(async (title: string, mode: Mode) => {
+    const todo = await addBacklogTodo(title, mode);
+    setStoredMode(todo.id, mode);
+    setBacklog((prev) => [...prev, { ...todo, mode }]);
   }, []);
 
   const updateBacklog = useCallback(async (id: string, updates: Partial<BacklogTodo>) => {
@@ -130,7 +158,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const moveToToday = useCallback(async (id: string) => {
     const todo = backlog.find((t) => t.id === id);
     if (!todo) return;
-    await apiAddTodo(todo.title, today);
+    const mode = todo.mode ?? 'personal';
+    const newTodo = await apiAddTodo(todo.title, today, mode);
+    setStoredMode(newTodo.id, mode);
     await deleteBacklogTodo(id);
     setBacklog((prev) => prev.filter((t) => t.id !== id));
   }, [backlog, today]);
@@ -138,15 +168,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const moveToBacklog = useCallback(async (id: string) => {
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
-    await addBacklogTodo(todo.title);
+    const mode = todo.mode ?? 'personal';
+    const newTodo = await addBacklogTodo(todo.title, mode);
+    setStoredMode(newTodo.id, mode);
     await apiDeleteTodo(id);
     setTodos((prev) => prev.filter((t) => t.id !== id));
   }, [todos]);
 
   // --- Plans ---
-  const addPlan = useCallback(async (title: string, date: string) => {
-    const plan = await apiAddPlan(title, date);
-    setPlans((prev) => [...prev, plan]);
+  const addPlan = useCallback(async (title: string, date: string, mode: Mode) => {
+    const plan = await apiAddPlan(title, date, mode);
+    setStoredMode(plan.id, mode);
+    setPlans((prev) => [...prev, { ...plan, mode }]);
   }, []);
 
   const updatePlan = useCallback(async (id: string, updates: Partial<Plan>) => {
@@ -164,18 +197,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await Promise.all(reordered.map((p, i) => apiUpdatePlan(p.id, { position: i })));
   }, []);
 
+  // --- Rituals ---
+  const addRitual = useCallback(async (title: string, mode: Mode) => {
+    const ritual = await apiAddRitual(title, mode);
+    setRituals((prev) => [...prev, { ...ritual, mode }]);
+  }, []);
+
+  const updateRitual = useCallback(async (id: string, updates: Partial<Ritual>) => {
+    setRituals((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+    await apiUpdateRitual(id, updates);
+  }, []);
+
+  const deleteRitual = useCallback(async (id: string) => {
+    setRituals((prev) => prev.filter((r) => r.id !== id));
+    await apiDeleteRitual(id);
+  }, []);
+
   const value = useMemo<DataContextValue>(() => ({
     today,
     todos, todosLoading, addTodo, updateTodo, deleteTodo, reorderTodos,
     backlog, backlogLoading, addBacklog, updateBacklog, deleteBacklog, reorderBacklog, moveToToday,
     moveToBacklog,
     plans, plansLoading, addPlan, updatePlan, deletePlan, reorderPlans,
+    rituals, ritualsLoading, addRitual, updateRitual, deleteRitual,
   }), [
     today,
     todos, todosLoading, addTodo, updateTodo, deleteTodo, reorderTodos,
     backlog, backlogLoading, addBacklog, updateBacklog, deleteBacklog, reorderBacklog, moveToToday,
     moveToBacklog,
     plans, plansLoading, addPlan, updatePlan, deletePlan, reorderPlans,
+    rituals, ritualsLoading, addRitual, updateRitual, deleteRitual,
   ]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -2,7 +2,7 @@
 
 A minimal personal productivity app for daily focus. Each day is a clean slate — a short list of things that matter today, a backlog for everything else, and a view of what's coming up.
 
-Built for one user. No auth, no complexity.
+Built for one user. Password-protected with a 3-day session.
 
 ---
 
@@ -35,12 +35,22 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-You'll need a Supabase project. Create a `.env.local` file:
+You'll need a Supabase project and a `.env.local` file with the following variables:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+APP_PASSWORD=your-login-password
+COOKIE_SECRET=your-64-char-hex-secret
 ```
+
+Generate `COOKIE_SECRET` with:
+
+```bash
+openssl rand -hex 32
+```
+
+`APP_PASSWORD` is the password you'll type at the login screen. `COOKIE_SECRET` signs the session cookie — keep it private and don't change it while sessions are active (it will invalidate them).
 
 Then run the schema from `SPEC.md` against your Supabase project to create the required tables (`day_todos`, `backlog_todos`, `plans`, `day_logs`).
 

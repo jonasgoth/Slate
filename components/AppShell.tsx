@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { DataProvider, useData } from '@/lib/DataContext';
+import { ModeProvider, useMode } from '@/lib/ModeContext';
 import { Sidebar } from './Sidebar';
 import { DailyWipe } from './DailyWipe';
 import { ThemeToggle } from './ThemeToggle';
@@ -37,6 +38,7 @@ const pageVariants: Variants = {
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const { today, todos, backlog, plans } = useData();
+  const { mode } = useMode();
   const pathname = usePathname();
 
   const prevPathRef = useRef(pathname);
@@ -51,9 +53,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     prevPathRef.current = pathname;
   }
 
-  const todayCount = todos.filter((t) => !t.is_completed).length;
-  const backlogCount = backlog.filter((t) => !t.is_completed).length;
-  const plansCount = plans.length;
+  const todayCount = todos.filter((t) => !t.is_completed && (t.mode ?? 'personal') === mode).length;
+  const backlogCount = backlog.filter((t) => !t.is_completed && (t.mode ?? 'personal') === mode).length;
+  const plansCount = plans.filter((p) => (p.mode ?? 'personal') === mode).length;
 
   return (
     <div style={{ backgroundColor: 'var(--bg-app)', overflowX: 'hidden', minHeight: '100vh' }}>
@@ -78,9 +80,17 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  if (pathname === '/login') {
+    return <>{children}</>;
+  }
+
   return (
-    <DataProvider>
-      <AppShellInner>{children}</AppShellInner>
-    </DataProvider>
+    <ModeProvider>
+      <DataProvider>
+        <AppShellInner>{children}</AppShellInner>
+      </DataProvider>
+    </ModeProvider>
   );
 }

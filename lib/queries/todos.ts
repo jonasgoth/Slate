@@ -16,13 +16,24 @@ export async function fetchTodos(date: string): Promise<Todo[]> {
   return data ?? [];
 }
 
-export async function addTodo(title: string, date: string): Promise<Todo> {
+export async function addTodo(title: string, date: string, mode: 'personal' | 'work' = 'personal'): Promise<Todo> {
   const { data, error } = await supabase
     .from('day_todos')
-    .insert({ title, date, is_completed: false, position: Math.floor(Date.now() / 1000) })
+    .insert({ title, date, mode, is_completed: false, position: Math.floor(Date.now() / 1000) })
     .select()
     .single();
-  if (error) throw toError(error);
+  if (error) {
+    if (error.code === 'PGRST204' || error.message?.includes('mode')) {
+      const { data: fallback, error: fallbackError } = await supabase
+        .from('day_todos')
+        .insert({ title, date, is_completed: false, position: Math.floor(Date.now() / 1000) })
+        .select()
+        .single();
+      if (fallbackError) throw toError(fallbackError);
+      return { ...fallback, mode };
+    }
+    throw toError(error);
+  }
   return data;
 }
 

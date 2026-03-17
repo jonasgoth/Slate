@@ -1,3 +1,5 @@
+export type Mode = 'personal' | 'work';
+
 export interface Todo {
   id: string;
   title: string;
@@ -5,6 +7,7 @@ export interface Todo {
   position: number;
   date: string;
   created_at: string;
+  mode: Mode;
 }
 
 export interface BacklogTodo {
@@ -13,6 +16,7 @@ export interface BacklogTodo {
   is_completed: boolean;
   position: number;
   created_at: string;
+  mode: Mode;
 }
 
 export interface Plan {
@@ -22,6 +26,16 @@ export interface Plan {
   emoji: string;
   position: number;
   created_at: string;
+  mode: Mode;
+}
+
+export interface Ritual {
+  id: string;
+  title: string;
+  position: number;
+  completed_date: string | null;
+  created_at: string;
+  mode: Mode;
 }
 
 export interface DayLog {

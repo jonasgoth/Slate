@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 
 interface InlineAddPlanProps {
   onAdd: (title: string, date: string) => void;
@@ -52,8 +53,11 @@ export function InlineAddPlan({ onAdd, onCancel }: InlineAddPlanProps) {
   };
 
   return (
-    <div
+    <motion.div
       data-inline-plan
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.12, ease: [0.4, 0, 0.2, 1] }}
       className="flex items-center gap-3"
       style={{
         borderRadius: '8px',
@@ -102,6 +106,6 @@ export function InlineAddPlan({ onAdd, onCancel }: InlineAddPlanProps) {
           textAlign: 'right',
         }}
       />
-    </div>
+    </motion.div>
   );
 }
