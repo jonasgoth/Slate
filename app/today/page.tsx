@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Brain as BrainIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTodos } from '@/hooks/useTodos';
@@ -173,6 +174,7 @@ export default function TodayPage() {
                   }}
                   label="Dump"
                   active={brainDumpOpen}
+                  icon={<BrainIcon size={14} />}
                 />
                 {!addingTask && (
                   <AddButton onClick={() => setAddingTask(true)} />

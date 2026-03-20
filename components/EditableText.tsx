@@ -67,6 +67,7 @@ export function EditableText({ value, onSave, completed = false, onEditingChange
   const textStyle: React.CSSProperties = {
     fontSize: '15px',
     fontWeight: 400,
+    lineHeight: '120%',
     color: 'var(--text-primary)',
     textDecoration: completed ? 'line-through' : 'none',
     opacity: completed ? 0.45 : 1,
@@ -76,6 +77,7 @@ export function EditableText({ value, onSave, completed = false, onEditingChange
     const sharedStyle: React.CSSProperties = {
       fontSize: '15px',
       fontWeight: 400,
+      lineHeight: '120%',
       padding: '1px 4px',
       whiteSpace: 'pre',
     };
