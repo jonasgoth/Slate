@@ -11,6 +11,19 @@ import { InlineAddTask } from '@/components/InlineAddTask';
 import { SortableList } from '@/components/SortableList';
 import type { BacklogTodo } from '@/types';
 
+const collapseVariants = {
+  open: {
+    height: 'auto',
+    opacity: 1,
+    transition: { duration: 0.17, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] },
+  },
+  closed: {
+    height: 0,
+    opacity: 0,
+    transition: { duration: 0.14, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] },
+  },
+};
+
 const modeListVariants = {
   enter: { opacity: 0, y: 5 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.14, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] } },
@@ -22,6 +35,7 @@ export default function BacklogPage() {
   const { mode } = useMode();
 
   const [addingTask, setAddingTask] = useState(false);
+  const [completedOpen, setCompletedOpen] = useState(true);
 
   const filteredTodos = todos.filter((t) => (t.mode ?? 'personal') === mode);
   const active = filteredTodos.filter((t) => !t.is_completed);
@@ -98,29 +112,42 @@ export default function BacklogPage() {
           {/* Completed section */}
           {completed.length > 0 && (
             <div style={{ marginTop: '32px' }}>
-              <SectionLabel>Completed</SectionLabel>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <AnimatePresence initial={false}>
-                  {completed.map((todo) => (
-                    <motion.div
-                      key={todo.id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } }}
-                      exit={{ opacity: 0, height: 0, transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } }}
-                      style={{ overflow: 'hidden' }}
-                    >
-                      <TaskCard
-                        id={todo.id}
-                        title={todo.title}
-                        isCompleted={todo.is_completed}
-                        onToggle={(id, completed) => updateTodo(id, { is_completed: completed })}
-                        onUpdate={(id, title) => updateTodo(id, { title })}
-                        onDelete={deleteTodo}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
+              <SectionLabel
+                collapsible
+                isOpen={completedOpen}
+                onToggle={() => setCompletedOpen((v) => !v)}
+              >
+                Completed
+              </SectionLabel>
+              <motion.div
+                variants={collapseVariants}
+                animate={completedOpen ? 'open' : 'closed'}
+                initial={false}
+                style={{ overflow: 'hidden' }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <AnimatePresence initial={false}>
+                    {completed.map((todo) => (
+                      <motion.div
+                        key={todo.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } }}
+                        exit={{ opacity: 0, height: 0, transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <TaskCard
+                          id={todo.id}
+                          title={todo.title}
+                          isCompleted={todo.is_completed}
+                          onToggle={(id, completed) => updateTodo(id, { is_completed: completed })}
+                          onUpdate={(id, title) => updateTodo(id, { title })}
+                          onDelete={deleteTodo}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
             </div>
           )}
         </motion.div>

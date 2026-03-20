@@ -56,10 +56,13 @@ export function TaskCard({
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-btn-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: '22px',
               color: 'var(--text-muted)',
               fontSize: '13px',
               fontWeight: 500,
-              padding: '3px 8px',
+              padding: '0 8px',
               borderRadius: '6px',
               backgroundColor: 'transparent',
               transition: 'color 0.15s ease',
@@ -77,10 +80,13 @@ export function TaskCard({
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-btn-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: '22px',
               color: 'var(--text-muted)',
               fontSize: '13px',
               fontWeight: 500,
-              padding: '3px 8px',
+              padding: '0 8px',
               borderRadius: '6px',
               backgroundColor: 'transparent',
               transition: 'color 0.15s ease',

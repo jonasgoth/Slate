@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
-import { fetchTodos, addTodo as apiAddTodo, updateTodo as apiUpdateTodo, deleteTodo as apiDeleteTodo } from '@/lib/queries/todos';
+import { fetchTodos, addTodo as apiAddTodo, updateTodo as apiUpdateTodo, deleteTodo as apiDeleteTodo, fetchArchivedCompletedCount } from '@/lib/queries/todos';
 import { fetchBacklog, addBacklogTodo, updateBacklogTodo, deleteBacklogTodo } from '@/lib/queries/backlog';
 import { fetchPlans, addPlan as apiAddPlan, updatePlan as apiUpdatePlan, deletePlan as apiDeletePlan } from '@/lib/queries/plans';
 import { fetchRituals, addRitual as apiAddRitual, updateRitual as apiUpdateRitual, deleteRitual as apiDeleteRitual } from '@/lib/queries/rituals';
@@ -40,6 +40,8 @@ interface DataContextValue {
   addRitual: (title: string, mode: Mode) => Promise<void>;
   updateRitual: (id: string, updates: Partial<Ritual>) => Promise<void>;
   deleteRitual: (id: string) => Promise<void>;
+
+  totalCompletedCount: number;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -55,6 +57,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [plansLoading, setPlansLoading] = useState(true);
   const [rituals, setRituals] = useState<Ritual[]>([]);
   const [ritualsLoading, setRitualsLoading] = useState(true);
+  const [archivedCompletedCount, setArchivedCompletedCount] = useState(0);
 
   useEffect(() => {
     fetchTodos(today).then((data) => {
@@ -66,6 +69,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     fetchBacklog().then((data) => { setBacklog(mergeMode(data)); setBacklogLoading(false); });
     fetchPlans().then((data) => { setPlans(mergeMode(data)); setPlansLoading(false); });
     fetchRituals().then((data) => { setRituals(data); setRitualsLoading(false); });
+    fetchArchivedCompletedCount().then(setArchivedCompletedCount);
 
     const todosChannel = supabase
       .channel(`day_todos_${today}`)
@@ -213,6 +217,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await apiDeleteRitual(id);
   }, []);
 
+  const totalCompletedCount = useMemo(() => {
+    const todayCompleted = todos.filter((t) => t.is_completed).length;
+    const backlogCompleted = backlog.filter((t) => t.is_completed).length;
+    return archivedCompletedCount + todayCompleted + backlogCompleted;
+  }, [archivedCompletedCount, todos, backlog]);
+
   const value = useMemo<DataContextValue>(() => ({
     today,
     todos, todosLoading, addTodo, updateTodo, deleteTodo, reorderTodos,
@@ -220,6 +230,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     moveToBacklog,
     plans, plansLoading, addPlan, updatePlan, deletePlan, reorderPlans,
     rituals, ritualsLoading, addRitual, updateRitual, deleteRitual,
+    totalCompletedCount,
   }), [
     today,
     todos, todosLoading, addTodo, updateTodo, deleteTodo, reorderTodos,
@@ -227,6 +238,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     moveToBacklog,
     plans, plansLoading, addPlan, updatePlan, deletePlan, reorderPlans,
     rituals, ritualsLoading, addRitual, updateRitual, deleteRitual,
+    totalCompletedCount,
   ]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

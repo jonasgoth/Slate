@@ -91,3 +91,11 @@ export async function carryForwardTodos(fromDate: string, toDate: string): Promi
     .eq('is_completed', false);
   if (error) throw toError(error);
 }
+
+export async function fetchArchivedCompletedCount(): Promise<number> {
+  const { data, error } = await supabase
+    .from('day_logs')
+    .select('completed_count');
+  if (error) throw toError(error);
+  return (data ?? []).reduce((sum, row) => sum + (row.completed_count ?? 0), 0);
+}

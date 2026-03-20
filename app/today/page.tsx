@@ -37,7 +37,7 @@ const modeListVariants = {
 };
 
 export default function TodayPage() {
-  const { today } = useData();
+  const { today, totalCompletedCount } = useData();
   const { todos, addTodo, updateTodo, deleteTodo, reorderTodos, moveToBacklog } = useTodos();
   const { plans } = usePlans();
   // const { rituals, addRitual, updateRitual, deleteRitual } = useRituals();
@@ -49,11 +49,14 @@ export default function TodayPage() {
   const [focusOpen, setFocusOpen] = useState(true);
   // const [ritualsOpen, setRitualsOpen] = useState(true);
   const [plansOpen, setPlansOpen] = useState(true);
+  const [completedOpen, setCompletedOpen] = useState(true);
 
   const dayName = format(new Date(), 'EEEE');
   const dateLabel = format(new Date(), 'MMMM d');
 
   const filteredTodos = todos.filter((t) => (t.mode ?? 'personal') === mode);
+  const active = filteredTodos.filter((t) => !t.is_completed);
+  const completed = filteredTodos.filter((t) => t.is_completed);
   // const filteredRituals = rituals.filter((r) => (r.mode ?? 'personal') === mode);
   const upcomingPlans = plans.filter((p) => (p.mode ?? 'personal') === mode).slice(0, 3);
 
@@ -66,7 +69,7 @@ export default function TodayPage() {
     />
     <div className="page-container">
       {/* Header */}
-      <div style={{ marginBottom: '40px' }}>
+      <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <h1
           style={{
             color: 'var(--text-primary)',
@@ -80,6 +83,25 @@ export default function TodayPage() {
         >
           {dayName}
         </h1>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: '32px',
+            height: '32px',
+            padding: '0 8px',
+            borderRadius: '8px',
+            backgroundColor: '#E8E8E3',
+            color: '#A0A09B',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            fontSize: '14px',
+            fontWeight: 600,
+            lineHeight: 1,
+          }}
+        >
+          {totalCompletedCount}
+        </span>
       </div>
 
       {/* Focus section */}
@@ -106,18 +128,18 @@ export default function TodayPage() {
               exit="exit"
             >
               <SortableList<Todo>
-                items={filteredTodos}
-                onReorder={reorderTodos}
+                items={active}
+                onReorder={(reordered) => reorderTodos([...reordered, ...completed])}
                 gap={8}
                 renderItem={(todo) => (
                   <TaskCard
                     id={todo.id}
                     title={todo.title}
                     isCompleted={todo.is_completed}
-                    onToggle={(id, completed) => updateTodo(id, { is_completed: completed })}
+                    onToggle={(id, val) => updateTodo(id, { is_completed: val })}
                     onUpdate={(id, title) => updateTodo(id, { title })}
                     onDelete={deleteTodo}
-                    showMoveToBacklog={!todo.is_completed}
+                    showMoveToBacklog
                     onMoveToBacklog={moveToBacklog}
                     onEnter={() => setAddingTask(true)}
                   />
@@ -156,6 +178,48 @@ export default function TodayPage() {
                   <AddButton onClick={() => setAddingTask(true)} />
                 )}
               </div>
+
+              {/* Completed section */}
+              {completed.length > 0 && (
+                <div style={{ marginTop: '32px' }}>
+                  <SectionLabel
+                    collapsible
+                    isOpen={completedOpen}
+                    onToggle={() => setCompletedOpen((v) => !v)}
+                  >
+                    Completed
+                  </SectionLabel>
+                  <motion.div
+                    variants={collapseVariants}
+                    animate={completedOpen ? 'open' : 'closed'}
+                    initial={false}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <AnimatePresence initial={false}>
+                        {completed.map((todo) => (
+                          <motion.div
+                            key={todo.id}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } }}
+                            exit={{ opacity: 0, height: 0, transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } }}
+                            style={{ overflow: 'hidden' }}
+                          >
+                            <TaskCard
+                              id={todo.id}
+                              title={todo.title}
+                              isCompleted={todo.is_completed}
+                              onToggle={(id, val) => updateTodo(id, { is_completed: val })}
+                              onUpdate={(id, title) => updateTodo(id, { title })}
+                              onDelete={deleteTodo}
+                            />
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </motion.div>

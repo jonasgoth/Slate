@@ -17,7 +17,7 @@ export function SectionLabel({ children, collapsible, isOpen, onToggle }: Sectio
       <p
         style={{
           fontSize: '14px',
-          fontWeight: 400,
+          fontWeight: 500,
           color: 'var(--text-muted)',
           marginBottom: '12px',
         }}
@@ -45,7 +45,7 @@ export function SectionLabel({ children, collapsible, isOpen, onToggle }: Sectio
         transition: 'color 0.15s ease',
       }}
     >
-      <span style={{ fontSize: '14px', fontWeight: 400 }}>{children}</span>
+      <span style={{ fontSize: '14px', fontWeight: 500 }}>{children}</span>
       <svg
         width="12"
         height="12"
